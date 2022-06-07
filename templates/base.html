@@ -1,0 +1,215 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Three.js 101</title>
+  <!--  Simple reset to delete the margins  -->
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+  <style>
+
+    *{box-sizing:border-box; margin:0 0; padding:0 0;font-size:1rem;}
+    body {width:100%; height:100%;}
+    #modelCanvas{width:100%; height:50%}
+    #imageCanvas{width:50%; height:100%; border:solid 3px grey}
+    #settings{width:50%; height:100%; background-color:darkgrey;border:solid 3px grey;
+              overflow-y:scroll;overflow-x:hidden;}
+    .settings_input{width:100%;padding:3px;margin:3px;display:block;}
+    .container{display:flex;flex-direction:row;width:100%; height:50%;border:solid 1px black}
+    label{width:100%;padding:2px;background-color:grey;margin:1px;display:block;text-align:center;}
+
+    .option_label{margin:1px;display:inline-block;text-align:left;width:20%;}
+    .value{}
+    .value_label{}
+    .slider_container{display:flex;justify-content:flex-start;}
+    .slider{width:50%;}
+    .change_imprint_depth{width:100%;}
+    select{width:100%;}
+    form{width:100%;}
+    .stats{display:none;width:100%;height:50px;position:absolute;top:0%;right:0%;background-color:rgba(255,255,255,0);}
+    .stats_name{font-size:10px;}
+    .stats_value{font-size:10px;}
+	
+    @media screen and (max-width: 600px) {
+    body{display:flex; flex-direction:column;}
+    #modelCanvas{width:100%; height:50%;}
+    #imageCanvas{width:150px; height:150px; position:absolute;top:0%;right:0%;background-color:black;border:solid 1px black;}
+    #settings{width:100%; height:100%; background-color:white;border:solid 1px black;}
+    }
+    .spinner {
+        display:none;position: absolute;left:calc(50% - 60px);top: calc(25% - 60px);
+        z-index: 1;border: 16px solid #f3f3f3;border-top: 16px solid #3498db;border-radius: 50%;
+        width: 120px;height: 120px; animation: spin 2s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+
+  <!--  Three.js CDN  -->
+  
+	<script src="./static/scripts/three.js"></script>
+	<script src="./static/scripts/OrbitControls.js"></script>
+	<script src="./static/scripts/BufferGeometryUtils.js"></script>
+	
+	<script src="./static/scripts/STLLoader.js"></script>
+	<script src="./static/scripts/OBJLoader.js"></script>
+	<script src="./static/scripts/GLTFLoader.js"></script>
+	
+	<script src="./static/scripts/STLExporter.js"></script>
+	<script src="./static/scripts/OBJExporter.js"></script>
+	<script src="./static/scripts/GLTFExporter.js"></script>
+	
+	<script src="./static/scripts/FileSaver.min.js"></script>
+	<!--
+	<script src="./static/scripts/common.js"></script>
+	<script src="./static/scripts/demo.js"></script>
+	-->
+	<script src="./static/scripts/second_demo.js"></script>
+	
+
+</head>
+<body>
+
+<div id="modelCanvas"> </div>
+<script type="text/javascript">
+window.onload = function() {
+   // init("modelCanvas");
+   second_demo_init("modelCanvas");
+   console.log("window loaded");
+}
+</script>
+
+<div class="container">
+    <canvas id="imageCanvas" width="1000" height="1000"></canvas>
+    <div id="settings">
+        <form>
+            <div class="settings_input">
+            <label for="change_model">Select Model:</label>
+            <select id="change_model" name="change_model">
+                <optgroup label="STL Files">
+                    <option data-polary_scale="0" data-polary_shift="0" value="Coral Pen_No_Logo_Rounded.STL">Coral Pen STL Test</option>
+                </optgroup>
+                <optgroup label="OBJ Files">
+                    <option data-polary_scale="4." data-cutoff="45.0" data-polary_shift="0.80" value="coral_remesh_LinedUP_originCenter.obj">Coral Remeshed 9-o</option>
+                    <option data-polary_scale="0" data-cutoff="50.0" data-polary_shift="0.90" value="Bolt_Remesh_10_SMoothobj.obj" >Bolt Action Remeshed 10-o</option>
+                </optgroup>
+                <optgroup label="OBJ Blender Primitives">
+                    <option data-polary_scale="0." data-polary_shift="0.5" value="cube.obj" selected>Starting Cube</option>
+                </optgroup>
+                <optgroup label="GLB Files">
+					<option data-polary_scale="0" data-cutoff="50.0" data-polary_shift="0.90" value="Bolt_Remesh_10_SMoothobj.glb" >Bolt Action Remeshed 10-o</option>
+                    <option data-polary_scale="4." data-cutoff="45.0" data-polary_shift="0.80" value="coral_remesh_LinedUP_originCenter.glb">Coral Remeshed 9-o</option>
+
+					<!-- <option data-polary_scale="0" data-polary_shift="0.5" value="handgun.glb" >GLB Test</option> -->
+                </optgroup>
+            </select>
+            <br>
+        </div>
+
+        <div class="settings_input">
+            <label for="import_logo">Import Logo</label>
+            <input type="file" id="import_logo" name="import_logo"><br>
+        </div>
+
+        <div class="settings_input">
+          <label class="option_label"  for="change_shift_x">Shift X</label>
+          <input type="range" class="slider canvas_slider"  id="change_shift_x"
+          data-span_id="change_shift_x_value" data-setting="shift_x" name="change_shift_x"
+          min="0" max="1000" value="500" step="1">
+          <span>X: </span><span class="value", id="change_shift_x_value" >0</span><br>
+        </div>
+
+        <div class="settings_input">
+          <label class="option_label" for="change_shift_y">Shift Y</label>
+          <input type="range" class="slider canvas_slider"  id="change_shift_y"
+          data-span_id="change_shift_y_value" data-setting="shift_y" name="change_shift_y"
+          min="0" max="1000" value="500" step="1">
+          <span>Y: </span><span class="value", id="change_shift_y_value" >0</span><br>
+        </div>
+
+        <div class="settings_input">
+          <label class="option_label" for="change_rotation">Angle </label>
+          <input type="range" class="slider canvas_slider"  id="change_rotation"
+          data-span_id="change_rotation_value" data-setting="rotation" name="change_rotation"
+          min="0" max="360" value="180" step="1">
+          <span class=value_label>Degs: </span><span class="value", id="change_rotation_value" >0</span><br>
+        </div>
+
+        <div class="settings_input">
+          <label class="option_label" for="change_scale">Scale  </label>
+          <input type="range" class="slider canvas_slider"  id="change_scale"
+          data-span_id="change_scale_value" data-setting="scale" name="change_scale" min="0"
+          max="2" value="1" step="0.01">
+          <span>S: </span><span class="value", id="change_scale_value" >0</span><br>
+        </div>
+
+        <div class="settings_input">
+          <label class="option_label" for="change_scale_x">Scale X</label>
+          <input type="range" class="slider canvas_slider"  id="change_scale_x"
+          data-span_id="change_scale_x_value" data-setting="scale_x" name="change_scale_x" min="0"
+          max="2" value="1" step="0.01">
+          <span>SX: </span><span class="value", id="change_scale_x_value" >0</span><br>
+        </div>
+
+        <div class="settings_input">
+          <label class="option_label" for="change_scale_y">Scale Y</label>
+          <input type="range" class="slider canvas_slider"  id="change_scale_y"
+          data-span_id="change_scale_y_value" data-setting="scale_y" name="change_scale_y" min="0"
+          max="2" value="1" step="0.01">
+          <span>SY: </span><span class="value", id="change_scale_y_value" >0</span><br>
+        </div>
+
+
+
+        <div class="settings_input">
+
+        <label for="change_imprint_type">Select Logo Design Type</label>
+        <select id="change_imprint_type" name="change_imprint_type"><br>
+            <option value="no_imprint">Edit Only</option>
+            <option value="emboss">Emboss</option>
+            <option value="deboss">Deboss</option>
+         <!--   <option value="Bevel">Bevel</option>
+            <option value="Cutout">Cutout</option> -->
+        </select>
+
+        </div>
+        <div class="settings_input">
+          <label for="change_material">Select Model Material Type:</label>
+            <select id="change_material" name="change_material">
+				<option value="basic">Basic</option>
+                <option value="standard">Standard</option>
+                <option value="lambert">Lambert</option>
+                <option value="textured">Textured</option>
+                <option value="normal">Normals</option>
+                <option value="wireframe">Wire Frame</option>
+            </select>
+        </div>
+
+        <div class="settings_input">
+          <label for="change_imprint_depth">Imprint Depth</label>
+          <input type="range" class="change_imprint_depth" id="change_imprint_depth" name="change_imprint_depth" min="0" max="1" value="1" step="0.05"><br>
+
+        </div>
+
+        <div class="settings_input">
+            <label for="change_export_type">Select Model Output File Type:</label>
+            <select id="change_export_type" name="change_export_type">
+                <option value="stl">STL</option>
+                <option value="obj">OBJ</option>
+                <option value="glb">GLB</option>
+            </select><br>
+        </div>
+
+        <div class="settings_input">
+            <button id="export_model" type="submit">Export Model</button>
+
+            <button id="send_model" type="submit">Send Model to Be Printed</button>
+        </div>
+        </form>
+    </div>
+
+</div>
+<div class="spinner" id="spinner"></div>
+</body>
+</html>
